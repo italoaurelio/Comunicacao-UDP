@@ -9,11 +9,33 @@ sock.settimeout(1.0)
 
 print(f"[Receptor] Aguardando mensagens em {HOST}:{PORT}")
 
+ultimo_num_receb = -1
+
 try:
     while True:
         try:
             data, addr = sock.recvfrom(1024)
-            print(f"[Receptor] Recebido de {addr}: {data.decode()}")
+            msg = data.decode()
+            
+            partes = msg.split("|")
+            
+            if len(partes) != 2:
+                print("[Receptor] Mensagem mal formatada.")
+                continue
+            numero_seq = int(partes[0])
+            conteudo = partes[1]
+            
+            if numero_seq != ultimo_num_receb:
+                print(f"[Receptor] Nova mensagem recebida de {addr}:\n      - Sequência={numero_seq}\n      - Conteúdo='{conteudo}")
+                ultimo_num_receb = numero_seq
+                
+                ack = f"ACK:{numero_seq}"
+                sock.sendto(ack.encode(), addr)
+            else:
+                print(f"[Receptor] Duplicata detectada (seq={numero_seq})")
+                ack = f"ACK:{numero_seq}"
+                sock.sendto(ack.encode(), addr)
+                            
         except socket.timeout:
                 continue
 
